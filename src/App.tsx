@@ -5,6 +5,8 @@ import { AuthScreen, RecoveryPasskeyScreen } from "./auth/AuthScreen.js";
 import { logoutSession } from "./auth/api.js";
 import { SecuritySettings } from "./auth/SecuritySettings.js";
 import { AccountsPage } from "./accounts/AccountsPage.js";
+import { PeoplePage } from "./people/PeoplePage.js";
+import { PersonDetailPage } from "./people/PersonDetailPage.js";
 
 const primaryNavigation = [
   { label: "Dashboard", path: "/", mobileLabel: "Home" },
@@ -73,11 +75,13 @@ function Page({
   theme,
   onToggleTheme,
   onLogout,
+  personDetail = false,
 }: {
   title: string;
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onLogout: () => void;
+  personDetail?: boolean;
 }) {
   return (
     <>
@@ -91,6 +95,12 @@ function Page({
         <SecuritySettings />
       ) : title === "Accounts" ? (
         <AccountsPage />
+      ) : title === "People" ? (
+        personDetail ? (
+          <PersonDetailPage />
+        ) : (
+          <PeoplePage />
+        )
       ) : (
         <section className="welcome-panel">
           <p>Welcome to your Personal Finance Manager</p>
@@ -120,12 +130,13 @@ function AppContent() {
       setError(cause instanceof Error ? cause.message : "Could not sign out.");
     }
   };
-  const page = (title: string) => (
+  const page = (title: string, personDetail = false) => (
     <Page
       title={title}
       theme={theme}
       onToggleTheme={toggleTheme}
       onLogout={() => void signOut()}
+      personDetail={personDetail}
     />
   );
 
@@ -203,6 +214,7 @@ function AppContent() {
           <Route path="/" element={page("Dashboard")} />
           <Route path="/accounts" element={page("Accounts")} />
           <Route path="/people" element={page("People")} />
+          <Route path="/people/:personId" element={page("People", true)} />
           <Route path="/expenses" element={page("Expenses")} />
           <Route path="/loans" element={page("Loans & EMI")} />
           <Route path="/investments" element={page("Investments")} />
