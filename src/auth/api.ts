@@ -35,12 +35,14 @@ export const authRequest = async <T>(
     body?: unknown;
     csrfToken?: string;
     setupToken?: string;
+    idempotencyKey?: string;
   } = {},
 ): Promise<T> => {
   const headers = new Headers();
   if (options.body !== undefined) headers.set("Content-Type", "application/json");
   if (options.csrfToken) headers.set("X-CSRF-Token", options.csrfToken);
   if (options.setupToken) headers.set("X-Setup-Token", options.setupToken);
+  if (options.idempotencyKey) headers.set("Idempotency-Key", options.idempotencyKey);
   const response = await fetch(`${apiBase}/auth${path}`, {
     method: options.method ?? "GET",
     credentials: "include",
@@ -129,4 +131,54 @@ export const revokeAuthDevice = (id: string, csrfToken: string) =>
   authRequest<{ removed: boolean }>(`/devices/${encodeURIComponent(id)}`, {
     method: "DELETE",
     csrfToken,
+  });
+
+export type FinancialAccountType = "BANK" | "CASH" | "UPI" | "CREDIT_CARD";
+
+export interface FinancialAccount {
+  id: string;
+  name: string;
+  accountType: FinancialAccountType;
+  institutionName: string | null;
+  balance: string;
+  createdAt: string;
+}
+
+export const listFinancialAccounts = () =>
+  authRequest<{ accounts: FinancialAccount[] }>("/accounts");
+
+export const createFinancialAccount = (
+  input: {
+    name: string;
+    accountType: FinancialAccountType;
+    institutionName: string | null;
+    openingBalance: string;
+    effectiveDate: string;
+  },
+  csrfToken: string,
+  idempotencyKey: string,
+) =>
+  authRequest<{ account: FinancialAccount }>("/accounts", {
+    method: "POST",
+    body: input,
+    csrfToken,
+    idempotencyKey,
+  });
+
+export const createAccountTransfer = (
+  input: {
+    fromAccountId: string;
+    toAccountId: string;
+    effectiveDate: string;
+    amount: string;
+    description: string;
+  },
+  csrfToken: string,
+  idempotencyKey: string,
+) =>
+  authRequest<{ transaction: { id: string } }>("/transfers", {
+    method: "POST",
+    body: input,
+    csrfToken,
+    idempotencyKey,
   });

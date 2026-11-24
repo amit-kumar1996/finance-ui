@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./auth/AuthProvider.js";
 import { AuthScreen, RecoveryPasskeyScreen } from "./auth/AuthScreen.js";
 import { logoutSession } from "./auth/api.js";
 import { SecuritySettings } from "./auth/SecuritySettings.js";
+import { AccountsPage } from "./accounts/AccountsPage.js";
 
 const primaryNavigation = [
   { label: "Dashboard", path: "/", mobileLabel: "Home" },
@@ -88,6 +89,8 @@ function Page({
       />
       {title === "Settings" ? (
         <SecuritySettings />
+      ) : title === "Accounts" ? (
+        <AccountsPage />
       ) : (
         <section className="welcome-panel">
           <p>Welcome to your Personal Finance Manager</p>

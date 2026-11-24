@@ -526,3 +526,230 @@ a {
     background: var(--page);
   }
 }
+
+.accounts-page {
+  display: grid;
+  gap: 20px;
+}
+
+.accounts-toolbar,
+.accounts-actions,
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.accounts-toolbar h2,
+.account-form h3,
+.accounts-empty h3 {
+  margin: 0;
+}
+
+.accounts-toolbar p,
+.accounts-empty p,
+.field-help {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.secondary-button {
+  padding: 11px 15px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.account-form,
+.accounts-table-wrap,
+.accounts-empty {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.account-form {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.account-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-form-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.account-form-grid input,
+.account-form-grid select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.field-optional,
+.field-help {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.account-form-wide {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  justify-content: flex-end;
+}
+
+.accounts-table-wrap {
+  overflow-x: auto;
+}
+
+.accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.accounts-table th,
+.accounts-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.accounts-table thead th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.accounts-table tbody tr:last-child th,
+.accounts-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.accounts-table tbody th {
+  font-weight: 600;
+}
+
+.accounts-table td {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.accounts-balance-heading,
+.account-balance {
+  text-align: right;
+}
+
+.account-balance {
+  color: var(--ink) !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.liability-balance {
+  color: #ad4c4c !important;
+}
+
+:root[data-theme="dark"] .liability-balance {
+  color: #f18d8d !important;
+}
+
+.account-name {
+  display: block;
+}
+
+.account-balance-mobile {
+  display: none;
+}
+
+.account-type-pill {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--page);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.accounts-empty {
+  padding: 42px 24px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .accounts-toolbar {
+    align-items: flex-start;
+  }
+
+  .accounts-toolbar,
+  .accounts-actions {
+    flex-wrap: wrap;
+  }
+
+  .accounts-toolbar h2 {
+    font-size: 20px;
+  }
+
+  .accounts-actions {
+    justify-content: flex-start;
+  }
+
+  .account-form {
+    padding: 16px;
+  }
+
+  .account-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-form-wide {
+    grid-column: auto;
+  }
+
+  .accounts-table th,
+  .accounts-table td {
+    padding: 13px 10px;
+  }
+
+  .accounts-table thead th:first-child,
+  .accounts-table tbody td:nth-child(3),
+  .accounts-table tbody td:nth-child(4) {
+    display: none;
+  }
+
+  .account-balance-mobile {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+  }
+}
