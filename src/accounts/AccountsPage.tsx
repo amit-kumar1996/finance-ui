@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createAccountTransfer,
   createFinancialAccount,
+  getDefaultExpenseAccount,
   listFinancialAccounts,
+  setDefaultExpenseAccount,
   type FinancialAccount,
   type FinancialAccountType,
 } from "../auth/api.js";
@@ -59,6 +61,7 @@ export function AccountsPage() {
   const [transferAmount, setTransferAmount] = useState("");
   const [transferDescription, setTransferDescription] = useState("");
   const [transferDate, setTransferDate] = useState(currentKolkataDate);
+  const [defaultExpenseAccountId, setDefaultExpenseAccountId] = useState("");
 
   const transferableAccounts = useMemo(
     () => accounts.filter((account) => account.accountType !== "CREDIT_CARD"),
@@ -67,8 +70,12 @@ export function AccountsPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const result = await listFinancialAccounts();
+      const [result, defaultResult] = await Promise.all([
+        listFinancialAccounts(),
+        getDefaultExpenseAccount(),
+      ]);
       setAccounts(result.accounts);
+      setDefaultExpenseAccountId(defaultResult.account?.id ?? "");
     } catch (cause) {
       setError(errorText(cause));
     } finally {
@@ -137,6 +144,24 @@ export function AccountsPage() {
     }
   };
 
+  const saveDefaultExpenseAccount = async (nextAccountId: string) => {
+    if (!session) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const result = await setDefaultExpenseAccount(
+        nextAccountId || null,
+        session.csrfToken,
+        crypto.randomUUID(),
+      );
+      setDefaultExpenseAccountId(result.account?.id ?? "");
+    } catch (cause) {
+      setError(errorText(cause));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <section className="accounts-page" aria-labelledby="accounts-title">
       <div className="accounts-toolbar">
@@ -162,6 +187,25 @@ export function AccountsPage() {
             + Add account
           </button>
         </div>
+      </div>
+
+      <div className="default-expense-preference">
+        <label>
+          Default expense account
+          <select
+            disabled={saving}
+            value={defaultExpenseAccountId}
+            onChange={(event) => void saveDefaultExpenseAccount(event.target.value)}
+          >
+            <option value="">Choose an account</option>
+            {transferableAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span>Expenses use this account without adding a field to the entry form.</span>
       </div>
 
       {showAccountForm && (

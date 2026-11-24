@@ -29,7 +29,7 @@ export class AuthApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   csrfToken?: string;
   setupToken?: string;
@@ -148,6 +148,26 @@ export interface FinancialAccount {
 
 export const listFinancialAccounts = () =>
   authRequest<{ accounts: FinancialAccount[] }>("/accounts");
+
+export const getDefaultExpenseAccount = () =>
+  apiRequest<{ account: FinancialAccount | null }>(
+    "/preferences/default-expense-account",
+  );
+
+export const setDefaultExpenseAccount = (
+  accountId: string | null,
+  csrfToken: string,
+  idempotencyKey: string,
+) =>
+  apiRequest<{ account: FinancialAccount | null }>(
+    "/preferences/default-expense-account",
+    {
+      method: "PUT",
+      body: { accountId },
+      csrfToken,
+      idempotencyKey,
+    },
+  );
 
 export const createFinancialAccount = (
   input: {
@@ -277,3 +297,84 @@ export const postPersonMovement = (
 
 export const getPersonStatement = (personId: string) =>
   apiRequest<PersonStatement>(`/people/${encodeURIComponent(personId)}/statement`);
+
+export interface Expense {
+  id: string;
+  effectiveDate: string;
+  description: string;
+  amount: string;
+  accountId: string;
+  accountName: string;
+}
+
+export interface ExpensePeriodTotal {
+  period: string;
+  total: string;
+  previousPeriod: string;
+  previousTotal: string;
+  difference: string;
+}
+
+export interface ExpenseSummary {
+  date: string;
+  daily: Omit<ExpensePeriodTotal, "previousPeriod" | "previousTotal" | "difference"> & {
+    previousTotal: string;
+    difference: string;
+  };
+  monthly: ExpensePeriodTotal;
+  yearly: ExpensePeriodTotal;
+}
+
+export const listExpenses = (filters: {
+  search?: string;
+  from?: string;
+  to?: string;
+  month?: string;
+}) => {
+  const query = new URLSearchParams();
+  if (filters.search) query.set("search", filters.search);
+  if (filters.from) query.set("from", filters.from);
+  if (filters.to) query.set("to", filters.to);
+  if (filters.month) query.set("month", filters.month);
+  return apiRequest<{ expenses: Expense[] }>(`/expenses${query.size ? `?${query}` : ""}`);
+};
+
+export const getExpenseSummary = async (date: string) => {
+  const result = await apiRequest<{ summary: ExpenseSummary }>(
+    `/expenses/summary?date=${encodeURIComponent(date)}`,
+  );
+  return result.summary;
+};
+
+export const createExpense = (
+  input: { effectiveDate: string; amount: string; description: string },
+  csrfToken: string,
+  idempotencyKey: string,
+) =>
+  apiRequest<{ transaction: { id: string } }>("/expenses", {
+    method: "POST",
+    body: input,
+    csrfToken,
+    idempotencyKey,
+  });
+
+export const editExpense = (
+  expenseId: string,
+  input: { effectiveDate: string; amount: string; description: string },
+  csrfToken: string,
+  idempotencyKey: string,
+) =>
+  apiRequest<{ transaction: { id: string }; reversal: { id: string } }>(
+    `/expenses/${encodeURIComponent(expenseId)}`,
+    { method: "PATCH", body: input, csrfToken, idempotencyKey },
+  );
+
+export const deleteExpense = (
+  expenseId: string,
+  csrfToken: string,
+  idempotencyKey: string,
+) =>
+  apiRequest<{ transaction: { id: string } }>(
+    `/expenses/${encodeURIComponent(expenseId)}`,
+    { method: "DELETE", csrfToken, idempotencyKey },
+  );
