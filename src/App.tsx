@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router";
+import { AuthProvider, useAuth } from "./auth/AuthProvider.js";
+import { AuthScreen, RecoveryPasskeyScreen } from "./auth/AuthScreen.js";
+import { logoutSession } from "./auth/api.js";
+import { SecuritySettings } from "./auth/SecuritySettings.js";
 
 const primaryNavigation = [
   { label: "Dashboard", path: "/", mobileLabel: "Home" },
@@ -30,10 +34,12 @@ function PageHeading({
   title,
   theme,
   onToggleTheme,
+  onLogout,
 }: {
   title: string;
   theme: "light" | "dark";
   onToggleTheme: () => void;
+  onLogout: () => void;
 }) {
   return (
     <div className="page-heading">
@@ -50,6 +56,9 @@ function PageHeading({
         >
           {theme === "light" ? "Dark mode" : "Light mode"}
         </button>
+        <button className="theme-toggle" type="button" onClick={onLogout}>
+          Sign out
+        </button>
         <div className="sync-badge" aria-label="Synced, zero pending">
           <span className="sync-dot" /> Synced · 0 pending
         </div>
@@ -62,32 +71,59 @@ function Page({
   title,
   theme,
   onToggleTheme,
+  onLogout,
 }: {
   title: string;
   theme: "light" | "dark";
   onToggleTheme: () => void;
+  onLogout: () => void;
 }) {
   return (
     <>
-      <PageHeading title={title} theme={theme} onToggleTheme={onToggleTheme} />
-      <section className="welcome-panel">
-        <p>Welcome to your Personal Finance Manager</p>
-        <span>
-          Account totals and reports will appear here as you record transactions.
-        </span>
-      </section>
+      <PageHeading
+        title={title}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+        onLogout={onLogout}
+      />
+      {title === "Settings" ? (
+        <SecuritySettings />
+      ) : (
+        <section className="welcome-panel">
+          <p>Welcome to your Personal Finance Manager</p>
+          <span>
+            Account totals and reports will appear here as you record transactions.
+          </span>
+        </section>
+      )}
     </>
   );
 }
 
-export default function App() {
+function AppContent() {
+  const { checkingSession, session, error, setError, clearSession, clearRecoveryCodes } =
+    useAuth();
   const [theme, setTheme] = useState<"light" | "dark">(getSavedTheme);
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
   const toggleTheme = () =>
     setTheme((current) => (current === "light" ? "dark" : "light"));
+  const signOut = async () => {
+    if (!session) return;
+    try {
+      await logoutSession(session.csrfToken);
+      clearSession();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not sign out.");
+    }
+  };
   const page = (title: string) => (
-    <Page title={title} theme={theme} onToggleTheme={toggleTheme} />
+    <Page
+      title={title}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      onLogout={() => void signOut()}
+    />
   );
 
   useEffect(() => {
@@ -100,6 +136,16 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
+
+  if (checkingSession) {
+    return (
+      <main className="auth-screen">
+        <p role="status">Checking your sign-in…</p>
+      </main>
+    );
+  }
+  if (!session) return <AuthScreen />;
+  if (session.recoveryOnly) return <RecoveryPasskeyScreen />;
 
   return (
     <div className="app-shell">
@@ -120,6 +166,30 @@ export default function App() {
       </aside>
 
       <main className="main-content">
+        {error && (
+          <p className="auth-error global-error" role="alert">
+            {error}
+          </p>
+        )}
+        {session.recoveryCodes && (
+          <section className="recovery-codes" aria-labelledby="recovery-codes-title">
+            <div>
+              <h2 id="recovery-codes-title">Save your recovery codes</h2>
+              <p>
+                Each code works once. This list is shown only now, so store it somewhere
+                private.
+              </p>
+            </div>
+            <ul>
+              {session.recoveryCodes.map((code) => (
+                <li key={code}>{code}</li>
+              ))}
+            </ul>
+            <button className="text-button" type="button" onClick={clearRecoveryCodes}>
+              I’ve saved these codes
+            </button>
+          </section>
+        )}
         <header className="mobile-header">
           <span className="mobile-brand">Personal Finance Manager</span>
           <div className="sync-badge" aria-label="Synced, zero pending">
@@ -171,5 +241,13 @@ export default function App() {
         </nav>
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
