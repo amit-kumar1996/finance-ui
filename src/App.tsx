@@ -10,6 +10,9 @@ import { PersonDetailPage } from "./people/PersonDetailPage.js";
 import { ExpensesPage } from "./expenses/ExpensesPage.js";
 import { LoansPage } from "./loans/LoansPage.js";
 import { InvestmentsPage } from "./investments/InvestmentsPage.js";
+import { DashboardPage } from "./net-worth/DashboardPage.js";
+import { NetWorthPage } from "./net-worth/NetWorthPage.js";
+import { ReportsPage } from "./net-worth/ReportsPage.js";
 
 const primaryNavigation = [
   { label: "Dashboard", path: "/", mobileLabel: "Home" },
@@ -50,7 +53,7 @@ function PageHeading({
   return (
     <div className="page-heading">
       <div>
-        <h1>{title}</h1>
+        <h1 id="page-heading-title">{title}</h1>
         <p>Your personal financial position</p>
       </div>
       <div className="heading-actions">
@@ -110,6 +113,12 @@ function Page({
         <LoansPage />
       ) : title === "Investments" ? (
         <InvestmentsPage />
+      ) : title === "Dashboard" ? (
+        <DashboardPage />
+      ) : title === "Net Worth" ? (
+        <NetWorthPage />
+      ) : title === "Reports" ? (
+        <ReportsPage />
       ) : (
         <section className="welcome-panel">
           <p>Welcome to your Personal Finance Manager</p>

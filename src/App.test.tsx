@@ -7,16 +7,55 @@ describe("app navigation shell", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          data: {
-            userId: "local-user",
-            csrfToken: "csrf-test",
-            expiresAt: "2026-11-25T00:00:00.000Z",
-            recoveryOnly: false,
-          },
-        }),
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).endsWith("/auth/session")) {
+          return {
+            ok: true,
+            json: async () => ({
+              data: {
+                userId: "local-user",
+                csrfToken: "csrf-test",
+                expiresAt: "2026-11-25T00:00:00.000Z",
+                recoveryOnly: false,
+              },
+            }),
+          } as Response;
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              asOfDate: "2026-11-25",
+              position: {
+                asOfDate: "2026-11-25",
+                totalAssets: "0.00",
+                totalLiabilities: "0.00",
+                netWorth: "0.00",
+                debtToAssetRatio: null,
+                assetBreakdown: [],
+                liabilityBreakdown: [],
+              },
+              whereMoneyStands: {
+                cash: "0.00",
+                investments: "0.00",
+                receivables: "0.00",
+                loans: "0.00",
+                creditCards: "0.00",
+                payables: "0.00",
+              },
+              month: {
+                month: "2026-11",
+                income: "0.00",
+                expenses: "0.00",
+                invested: "0.00",
+                cashFlow: "0.00",
+              },
+              history: [],
+              upcoming: [],
+              priceFreshness: [],
+            },
+          }),
+        } as Response;
       }),
     );
   });

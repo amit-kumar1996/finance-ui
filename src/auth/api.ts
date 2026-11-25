@@ -36,7 +36,10 @@ interface RequestOptions {
   idempotencyKey?: string;
 }
 
-const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
+export const apiRequest = async <T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> => {
   const headers = new Headers();
   if (options.body !== undefined) headers.set("Content-Type", "application/json");
   if (options.csrfToken) headers.set("X-CSRF-Token", options.csrfToken);
