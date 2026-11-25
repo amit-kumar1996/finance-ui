@@ -101,6 +101,56 @@ export const apiRequest = async <T>(
   return (payload as ApiEnvelope<T>).data;
 };
 
+export interface BackupItem {
+  id: string;
+  createdAt: string;
+  fileName: string;
+  sizeBytes: number;
+  sha256: string;
+  encryption: "age";
+  offsite: "copied" | "pending" | "failed";
+}
+
+export const listBackups = () => apiRequest<{ backups: BackupItem[] }>("/backups");
+
+export const verifyBackup = (id: string, csrfToken: string) =>
+  apiRequest<{ id: string; valid: boolean; checkedAt: string }>(
+    `/backups/${encodeURIComponent(id)}/verify`,
+    { method: "POST", body: {}, csrfToken },
+  );
+
+export const restoreBackupToScratch = (
+  id: string,
+  confirmation: string,
+  csrfToken: string,
+) =>
+  apiRequest<{ restoreId: string; databaseName: string; status: "started" }>(
+    `/backups/${encodeURIComponent(id)}/restore`,
+    { method: "POST", body: { confirmation }, csrfToken },
+  );
+
+export const downloadBackup = async (id: string) => {
+  const response = await fetch(`${apiBase}/backups/${encodeURIComponent(id)}/download`, {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const payload = (await response.json()) as { error?: { message?: string } };
+    throw new AuthApiError(
+      response.status,
+      payload.error?.message ?? "Could not download backup.",
+    );
+  }
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const fileName = disposition.match(/filename="([^"]+)"/)?.[1] ?? `${id}.sql.age`;
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
 export const authRequest = <T>(path: string, options: RequestOptions = {}) =>
   apiRequest<T>(`/auth${path}`, options);
 

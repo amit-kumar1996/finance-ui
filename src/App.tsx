@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./auth/AuthProvider.js";
 import { AuthScreen, RecoveryPasskeyScreen } from "./auth/AuthScreen.js";
 import { logoutSession } from "./auth/api.js";
 import { SecuritySettings } from "./auth/SecuritySettings.js";
+import { BackupSettings } from "./auth/BackupSettings.js";
 import { AccountsPage } from "./accounts/AccountsPage.js";
 import { PeoplePage } from "./people/PeoplePage.js";
 import { PersonDetailPage } from "./people/PersonDetailPage.js";
@@ -150,6 +151,7 @@ function Page({
       {title === "Settings" ? (
         <>
           <SecuritySettings />
+          <BackupSettings />
           <SyncQueuePanel />
         </>
       ) : title === "Accounts" ? (
