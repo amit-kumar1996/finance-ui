@@ -13,6 +13,24 @@ export interface SignedInState extends AuthSession {
   recoveryCodes?: string[];
 }
 
+let initialSessionRequest: Promise<AuthSession> | null = null;
+
+function readInitialSession(): Promise<AuthSession> {
+  if (!initialSessionRequest) {
+    const request = readCurrentSession();
+    initialSessionRequest = request;
+    void request.then(
+      () => {
+        if (initialSessionRequest === request) initialSessionRequest = null;
+      },
+      () => {
+        if (initialSessionRequest === request) initialSessionRequest = null;
+      },
+    );
+  }
+  return initialSessionRequest;
+}
+
 interface AuthContextValue {
   checkingSession: boolean;
   session: SignedInState | null;
@@ -35,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    void readCurrentSession()
+    void readInitialSession()
       .then((current) => {
         if (active) setSession(current);
       })

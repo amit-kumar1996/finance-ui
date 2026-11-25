@@ -237,7 +237,7 @@ export interface FinancialAccount {
 }
 
 export const listFinancialAccounts = () =>
-  authRequest<{ accounts: FinancialAccount[] }>("/accounts");
+  apiRequest<{ accounts: FinancialAccount[] }>("/accounts");
 
 export const getDefaultExpenseAccount = () =>
   apiRequest<{ account: FinancialAccount | null }>(
@@ -270,7 +270,7 @@ export const createFinancialAccount = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ account: FinancialAccount }>("/accounts", {
+  apiRequest<{ account: FinancialAccount }>("/accounts", {
     method: "POST",
     body: input,
     csrfToken,
@@ -288,7 +288,7 @@ export const createAccountTransfer = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ transaction: { id: string } }>("/transfers", {
+  apiRequest<{ transaction: { id: string } }>("/transfers", {
     method: "POST",
     body: input,
     csrfToken,

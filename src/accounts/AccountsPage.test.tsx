@@ -72,8 +72,15 @@ describe("Accounts page", () => {
 
     expect((await screen.findAllByText("Owed ₹10,000.00")).length).toBeGreaterThan(0);
     await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) =>
+            String(url).endsWith("/api/v1/accounts") && init?.method !== "POST",
+        ),
+      ).toBe(true);
       const request = fetchMock.mock.calls.find(
-        ([url, init]) => String(url).endsWith("/accounts") && init?.method === "POST",
+        ([url, init]) =>
+          String(url).endsWith("/api/v1/accounts") && init?.method === "POST",
       );
       expect(request).toBeDefined();
       const headers = new Headers(request?.[1]?.headers);

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router";
 import App from "./App.js";
@@ -72,6 +73,22 @@ describe("app navigation shell", () => {
     expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "Main navigation" })).toBeTruthy();
     expect(screen.getAllByLabelText("Synced, zero pending").length).toBeGreaterThan(0);
+  });
+
+  it("deduplicates the startup session check in React Strict Mode", async () => {
+    render(
+      <StrictMode>
+        <MemoryRouter>
+          <App />
+        </MemoryRouter>
+      </StrictMode>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeTruthy();
+    const sessionChecks = vi
+      .mocked(fetch)
+      .mock.calls.filter(([input]) => String(input).endsWith("/auth/session"));
+    expect(sessionChecks).toHaveLength(1);
   });
 
   it("opens the mobile More menu", async () => {
