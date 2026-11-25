@@ -439,7 +439,12 @@ export const getExpenseSummary = async (date: string) => {
 };
 
 export const createExpense = (
-  input: { effectiveDate: string; amount: string; description: string },
+  input: {
+    effectiveDate: string;
+    amount: string;
+    description: string;
+    accountId: string;
+  },
   csrfToken: string,
   idempotencyKey: string,
 ) =>

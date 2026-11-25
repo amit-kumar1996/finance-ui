@@ -21,6 +21,24 @@ const expense = {
   accountId: "bank-1",
   accountName: "Main bank",
 };
+const financialAccounts = [
+  {
+    id: "bank-1",
+    name: "Main bank",
+    accountType: "BANK",
+    institutionName: null,
+    balance: "10000.00",
+    createdAt: "2026-11-20T00:00:00.000Z",
+  },
+  {
+    id: "card-1",
+    name: "Travel card",
+    accountType: "CREDIT_CARD",
+    institutionName: null,
+    balance: "0.00",
+    createdAt: "2026-11-21T00:00:00.000Z",
+  },
+];
 
 const summary = {
   date: "2024-02-29",
@@ -61,7 +79,7 @@ describe("Expenses page", () => {
     vi.restoreAllMocks();
   });
 
-  it("keeps the entry form to Date, Summary, Amount and posts no account field", async () => {
+  it("lets the user select an account and posts it with the three expense fields", async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -74,6 +92,13 @@ describe("Expenses page", () => {
           ok: true,
           status: 200,
           json: async () => ({ data: { summary } }),
+        } as Response;
+      }
+      if (url.endsWith("/accounts")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { accounts: financialAccounts } }),
         } as Response;
       }
       if (url.endsWith("/preferences/default-expense-account")) {
@@ -106,7 +131,7 @@ describe("Expenses page", () => {
     expect(within(form as HTMLElement).getByLabelText("Date")).toBeTruthy();
     expect(within(form as HTMLElement).getByLabelText("Summary")).toBeTruthy();
     expect(within(form as HTMLElement).getByLabelText("Amount")).toBeTruthy();
-    expect(within(form as HTMLElement).queryByLabelText(/Account/)).toBeNull();
+    expect(within(form as HTMLElement).getByLabelText("Account")).toBeTruthy();
 
     fireEvent.change(within(form as HTMLElement).getByLabelText("Date"), {
       target: { value: "2024-02-29" },
@@ -116,6 +141,9 @@ describe("Expenses page", () => {
     });
     fireEvent.change(within(form as HTMLElement).getByLabelText("Amount"), {
       target: { value: "1000.00" },
+    });
+    fireEvent.change(within(form as HTMLElement).getByLabelText("Account"), {
+      target: { value: "card-1" },
     });
     fireEvent.click(
       within(form as HTMLElement).getByRole("button", { name: "Save expense" }),
@@ -130,6 +158,7 @@ describe("Expenses page", () => {
         effectiveDate: "2024-02-29",
         description: "Market groceries",
         amount: "1000.00",
+        accountId: "card-1",
       });
       const headers = new Headers(request?.init?.headers);
       expect(headers.get("X-CSRF-Token")).toBe("csrf-test");
@@ -152,6 +181,13 @@ describe("Expenses page", () => {
           ok: true,
           status: 200,
           json: async () => ({ data: { summary } }),
+        } as Response;
+      }
+      if (url.endsWith("/accounts")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { accounts: financialAccounts } }),
         } as Response;
       }
       if (url.endsWith("/preferences/default-expense-account")) {
@@ -207,6 +243,13 @@ describe("Expenses page", () => {
           ok: true,
           status: 200,
           json: async () => ({ data: { summary } }),
+        } as Response;
+      }
+      if (url.endsWith("/accounts")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { accounts: financialAccounts } }),
         } as Response;
       }
       if (url.endsWith("/preferences/default-expense-account")) {

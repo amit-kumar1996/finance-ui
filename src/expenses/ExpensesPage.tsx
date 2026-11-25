@@ -6,9 +6,11 @@ import {
   editExpense,
   getDefaultExpenseAccount,
   getExpenseSummary,
+  listFinancialAccounts,
   listExpenses,
   type Expense,
   type ExpenseSummary,
+  type FinancialAccount,
 } from "../auth/api.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { listPendingMutations } from "../offline/database.js";
@@ -96,7 +98,9 @@ export function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [pendingExpenses, setPendingExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
-  const [defaultAccountName, setDefaultAccountName] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
+  const [defaultAccountId, setDefaultAccountId] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -109,6 +113,7 @@ export function ExpensesPage() {
   const [to, setTo] = useState("");
   const [month, setMonth] = useState("");
   const [summaryDate, setSummaryDate] = useState(currentKolkataDate);
+  const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
 
   const refresh = useCallback(async () => {
     try {
@@ -134,6 +139,26 @@ export function ExpensesPage() {
     }
   }, [setError, summaryDate]);
 
+  const refreshAccounts = useCallback(async () => {
+    try {
+      const accountResult = await listFinancialAccounts();
+      setAccounts(accountResult.accounts);
+      let nextDefaultId =
+        accountResult.accounts.find((account) => account.accountType !== "CREDIT_CARD")
+          ?.id ?? "";
+      try {
+        const defaultResult = await getDefaultExpenseAccount();
+        nextDefaultId = defaultResult.account?.id ?? nextDefaultId;
+      } catch (cause) {
+        setError(errorText(cause));
+      }
+      setDefaultAccountId(nextDefaultId);
+      setSelectedAccountId((current) => current || nextDefaultId);
+    } catch (cause) {
+      setError(errorText(cause));
+    }
+  }, [setError]);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -143,10 +168,8 @@ export function ExpensesPage() {
   }, [refreshSummary]);
 
   useEffect(() => {
-    void getDefaultExpenseAccount()
-      .then((result) => setDefaultAccountName(result.account?.name ?? null))
-      .catch((cause: unknown) => setError(errorText(cause)));
-  }, [setError]);
+    void refreshAccounts();
+  }, [refreshAccounts]);
 
   useEffect(() => {
     const reloadPending = () => {
@@ -186,11 +209,13 @@ export function ExpensesPage() {
     setEffectiveDate(currentKolkataDate());
     setDescription("");
     setAmount("");
+    setSelectedAccountId(defaultAccountId);
     setShowForm(false);
   };
 
   const beginEdit = (expense: Expense) => {
     setEditingExpenseId(expense.id);
+    setSelectedAccountId(expense.accountId);
     setEffectiveDate(expense.effectiveDate);
     setDescription(expense.description);
     setAmount(expense.amount);
@@ -213,7 +238,11 @@ export function ExpensesPage() {
           crypto.randomUUID(),
         );
       } else {
-        const result = await createExpense(input, session.csrfToken, crypto.randomUUID());
+        const result = await createExpense(
+          { ...input, accountId: selectedAccountId },
+          session.csrfToken,
+          crypto.randomUUID(),
+        );
         if (result.queued && result.clientId) {
           setPendingExpenses((current) => {
             const id = `offline-${result.clientId}`;
@@ -224,8 +253,8 @@ export function ExpensesPage() {
                   {
                     id,
                     ...input,
-                    accountId: "offline",
-                    accountName: "Pending sync",
+                    accountId: selectedAccountId,
+                    accountName: selectedAccount?.name ?? "Pending sync",
                   },
                 ];
           });
@@ -300,14 +329,14 @@ export function ExpensesPage() {
         </div>
       </div>
 
-      {!defaultAccountName && (
+      {!accounts.length && (
         <p className="expense-default-notice" role="status">
-          Add a Bank, Cash, or UPI account on the{" "}
-          <Link to="/accounts">Accounts page</Link> before adding expenses.
+          Add an account on the <Link to="/accounts">Accounts page</Link> before adding
+          expenses.
         </p>
       )}
-      {defaultAccountName && (
-        <p className="expense-default-note">Expenses will use {defaultAccountName}.</p>
+      {selectedAccount && (
+        <p className="expense-default-note">Selected account: {selectedAccount.name}.</p>
       )}
 
       {showForm && (
@@ -343,6 +372,25 @@ export function ExpensesPage() {
                 onChange={(event) => setAmount(event.target.value)}
               />
             </label>
+            {!editingExpenseId && (
+              <label>
+                Account
+                <select
+                  required
+                  value={selectedAccountId}
+                  onChange={(event) => setSelectedAccountId(event.target.value)}
+                >
+                  <option value="" disabled>
+                    Choose an account
+                  </option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name} ({account.accountType.replaceAll("_", " ")})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
           <div className="form-actions">
             <button className="secondary-button" type="button" onClick={resetForm}>
@@ -351,7 +399,7 @@ export function ExpensesPage() {
             <button
               className="primary-button"
               type="submit"
-              disabled={saving || (!editingExpenseId && !defaultAccountName)}
+              disabled={saving || (!editingExpenseId && !selectedAccountId)}
             >
               {saving ? "Saving…" : editingExpenseId ? "Save changes" : "Save expense"}
             </button>
