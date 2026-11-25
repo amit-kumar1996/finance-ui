@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "../auth/AuthProvider.js";
@@ -26,15 +26,13 @@ const loan = {
   outstanding: "400000.00",
   paymentCount: 12,
   nextDueDate: "2025-01-05",
-  schedule: [
-    {
-      dueDate: "2025-01-05",
-      emiAmount: "6192.00",
-      principalAmount: "3358.67",
-      interestAmount: "2833.33",
-      closingBalance: "396641.33",
-    },
-  ],
+  schedule: Array.from({ length: 13 }, (_, index) => ({
+    dueDate: `2025-01-${String(index + 5).padStart(2, "0")}`,
+    emiAmount: "6192.00",
+    principalAmount: "3358.67",
+    interestAmount: "2833.33",
+    closingBalance: "396641.33",
+  })),
 };
 
 const renderPage = () =>
@@ -86,6 +84,14 @@ describe("Loans page", () => {
     expect(await screen.findByText("Home loan · EMI schedule")).toBeTruthy();
     expect(screen.getAllByText("₹4,00,000.00").length).toBeGreaterThan(0);
     expect(screen.getAllByText("2025-01-05").length).toBeGreaterThan(0);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show full schedule (13 installments)" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Show next 12 installments" }),
+      ).toBeTruthy(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Record payment" }));
     expect(
       await screen.findByLabelText(/This payment completes the scheduled EMI/),

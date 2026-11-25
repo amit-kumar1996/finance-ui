@@ -47,6 +47,7 @@ export function LoansPage() {
   const [showLoanForm, setShowLoanForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showPrepaymentForm, setShowPrepaymentForm] = useState(false);
+  const [showFullSchedule, setShowFullSchedule] = useState(false);
   const [name, setName] = useState("");
   const [provider, setProvider] = useState("");
   const [principal, setPrincipal] = useState("");
@@ -355,7 +356,9 @@ export function LoansPage() {
         </article>
         <article>
           <span>Next EMI</span>
-          <strong>{nextDue ? `${nextDueIsOverdue ? "Overdue · " : ""}${nextDue}` : "—"}</strong>
+          <strong>
+            {nextDue ? `${nextDueIsOverdue ? "Overdue · " : ""}${nextDue}` : "—"}
+          </strong>
         </article>
       </div>
       {loading ? (
@@ -391,7 +394,10 @@ export function LoansPage() {
                         <button
                           className="loan-select"
                           type="button"
-                          onClick={() => setSelectedId(loan.id)}
+                          onClick={() => {
+                            setSelectedId(loan.id);
+                            setShowFullSchedule(false);
+                          }}
                         >
                           {loan.name}
                         </button>
@@ -590,7 +596,10 @@ export function LoansPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selected.schedule.slice(0, 12).map((line) => (
+                      {(showFullSchedule
+                        ? selected.schedule
+                        : selected.schedule.slice(0, 12)
+                      ).map((line) => (
                         <tr key={line.dueDate}>
                           <td>{line.dueDate}</td>
                           <td>{money(line.emiAmount)}</td>
@@ -603,6 +612,17 @@ export function LoansPage() {
                     </tbody>
                   </table>
                 </div>
+                {selected.schedule.length > 12 && (
+                  <button
+                    className="text-button loan-schedule-toggle"
+                    type="button"
+                    onClick={() => setShowFullSchedule((visible) => !visible)}
+                  >
+                    {showFullSchedule
+                      ? "Show next 12 installments"
+                      : `Show full schedule (${selected.schedule.length} installments)`}
+                  </button>
+                )}
               </section>
               <section className="loan-details panel">
                 <h3>{selected.name} · details</h3>

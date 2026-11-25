@@ -1256,6 +1256,10 @@ a {
 .loan-action-form > .primary-button {
   justify-self: start;
 }
+.loan-schedule-toggle {
+  display: block;
+  margin-top: 12px;
+}
 .loan-checkbox {
   display: flex;
   align-items: center;
