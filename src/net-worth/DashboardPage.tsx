@@ -69,6 +69,7 @@ export function DashboardPage() {
   const {
     position,
     whereMoneyStands: stands,
+    peopleTracker,
     month,
     history,
     upcoming,
@@ -77,10 +78,8 @@ export function DashboardPage() {
   const standRows: Array<[string, string, string]> = [
     ["Bank, cash and UPI", stands.cash, ""],
     ["Investments (incl. FD, PPF, EPF)", stands.investments, ""],
-    ["To receive from people", stands.receivables, "positive-balance"],
     ["Loans outstanding", stands.loans, "negative-balance"],
     ["Credit card due", stands.creditCards, "negative-balance"],
-    ["To pay to people", stands.payables, "negative-balance"],
   ];
   const monthLabelText = new Intl.DateTimeFormat("en-IN", {
     month: "short",
@@ -131,6 +130,27 @@ export function DashboardPage() {
                 <strong className={color}>{formatMoney(value)}</strong>
               </div>
             ))}
+          </div>
+        </section>
+        <section className="dashboard-panel panel" aria-label="People tracker summary">
+          <h2>People tracker</h2>
+          <div className="dashboard-list">
+            <div>
+              <span>To receive</span>
+              <strong className="positive-balance">
+                {formatMoney(peopleTracker.receivable)}
+              </strong>
+            </div>
+            <div>
+              <span>To repay</span>
+              <strong className="negative-balance">
+                {formatMoney(peopleTracker.payable)}
+              </strong>
+            </div>
+            <div>
+              <span>People</span>
+              <strong>{peopleTracker.peopleCount}</strong>
+            </div>
           </div>
         </section>
         <section className="dashboard-panel panel">

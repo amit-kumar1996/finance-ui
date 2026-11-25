@@ -34,10 +34,14 @@ export interface DashboardData {
   whereMoneyStands: {
     cash: string;
     investments: string;
-    receivables: string;
     loans: string;
     creditCards: string;
-    payables: string;
+  };
+  peopleTracker: {
+    receivable: string;
+    payable: string;
+    net: string;
+    peopleCount: number;
   };
   month: MonthSummary;
   history: HistoryPoint[];

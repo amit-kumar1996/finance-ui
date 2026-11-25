@@ -55,26 +55,6 @@ describe("People page", () => {
           json: async () => ({ data: { people: [alex] } }),
         } as Response;
       }
-      if (url.endsWith("/accounts")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
-            data: {
-              accounts: [
-                {
-                  id: "bank-1",
-                  name: "Main bank",
-                  accountType: "BANK",
-                  institutionName: null,
-                  balance: "10000.00",
-                  createdAt: "2026-11-24T00:00:00.000Z",
-                },
-              ],
-            },
-          }),
-        } as Response;
-      }
       return {
         ok: false,
         status: 404,
@@ -108,7 +88,7 @@ describe("People page", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Add transaction" }));
     fireEvent.change(screen.getByLabelText("Type"), { target: { value: "GIVE" } });
     fireEvent.change(screen.getByLabelText("Amount"), { target: { value: "10000.00" } });
-    fireEvent.change(screen.getByLabelText("Account"), { target: { value: "bank-1" } });
+    fireEvent.change(screen.getByLabelText("Method"), { target: { value: "UPI" } });
     fireEvent.change(screen.getByLabelText(/Note/), { target: { value: "Short loan" } });
     fireEvent.click(screen.getByRole("button", { name: "Save transaction" }));
 
@@ -120,9 +100,9 @@ describe("People page", () => {
       expect(request).toBeDefined();
       expect(JSON.parse(String(request?.init?.body))).toMatchObject({
         movement: "GIVE",
+        paymentMethod: "UPI",
         personId: "person-1",
         amount: "10000.00",
-        accountId: "bank-1",
         note: "Short loan",
       });
       const headers = new Headers(request?.init?.headers);

@@ -39,10 +39,14 @@ describe("app navigation shell", () => {
               whereMoneyStands: {
                 cash: "0.00",
                 investments: "0.00",
-                receivables: "0.00",
                 loans: "0.00",
                 creditCards: "0.00",
-                payables: "0.00",
+              },
+              peopleTracker: {
+                receivable: "0.00",
+                payable: "0.00",
+                net: "0.00",
+                peopleCount: 0,
               },
               month: {
                 month: "2026-11",

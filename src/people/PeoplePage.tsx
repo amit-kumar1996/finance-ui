@@ -2,11 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   createPerson,
-  listFinancialAccounts,
   listPeople,
   postPersonMovement,
-  type FinancialAccount,
   type PersonMovement,
+  type PersonPaymentMethod,
   type PersonSummary,
 } from "../auth/api.js";
 import { useAuth } from "../auth/AuthProvider.js";
@@ -56,7 +55,6 @@ const errorText = (cause: unknown): string =>
 export function PeoplePage() {
   const { session, setError } = useAuth();
   const [people, setPeople] = useState<PersonSummary[]>([]);
-  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPersonForm, setShowPersonForm] = useState(false);
@@ -67,25 +65,14 @@ export function PeoplePage() {
   const [personId, setPersonId] = useState("");
   const [effectiveDate, setEffectiveDate] = useState(currentKolkataDate);
   const [amount, setAmount] = useState("");
-  const [accountId, setAccountId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PersonPaymentMethod>("CASH");
   const [note, setNote] = useState("");
 
   const refresh = useCallback(async () => {
     try {
-      const [peopleResult, accountResult] = await Promise.all([
-        listPeople(),
-        listFinancialAccounts(),
-      ]);
+      const peopleResult = await listPeople();
       setPeople(peopleResult.people);
-      setAccounts(accountResult.accounts);
       setPersonId((current) => current || peopleResult.people[0]?.id || "");
-      setAccountId(
-        (current) =>
-          current ||
-          accountResult.accounts.find((account) => account.accountType !== "CREDIT_CARD")
-            ?.id ||
-          "",
-      );
     } catch (cause) {
       setError(errorText(cause));
     } finally {
@@ -143,7 +130,7 @@ export function PeoplePage() {
           personId,
           effectiveDate,
           amount,
-          accountId,
+          paymentMethod,
           ...(note.trim() ? { note: note.trim() } : {}),
         },
         session.csrfToken,
@@ -165,7 +152,7 @@ export function PeoplePage() {
       <div className="people-toolbar">
         <div>
           <h2 id="people-title">People</h2>
-          <p>Money you lend is an asset. Money you borrow is a liability.</p>
+          <p>Track who owes you and who you need to repay. This tracker is separate from Accounts and net worth.</p>
         </div>
         <div className="accounts-actions">
           <button
@@ -296,20 +283,17 @@ export function PeoplePage() {
               />
             </label>
             <label>
-              Account
+              Method
               <select
                 required
-                value={accountId}
-                onChange={(event) => setAccountId(event.target.value)}
+                value={paymentMethod}
+                onChange={(event) =>
+                  setPaymentMethod(event.target.value as PersonPaymentMethod)
+                }
               >
-                <option value="">Choose account</option>
-                {accounts
-                  .filter((account) => account.accountType !== "CREDIT_CARD")
-                  .map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
+                <option value="CASH">Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="CARD">Card</option>
               </select>
             </label>
             <label>
@@ -332,11 +316,7 @@ export function PeoplePage() {
             <button
               className="primary-button"
               type="submit"
-              disabled={
-                saving ||
-                !people.length ||
-                !accounts.some((account) => account.accountType !== "CREDIT_CARD")
-              }
+              disabled={saving || !people.length}
             >
               {saving ? "Saving…" : "Save transaction"}
             </button>

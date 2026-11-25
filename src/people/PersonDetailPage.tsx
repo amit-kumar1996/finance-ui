@@ -21,6 +21,9 @@ const movementLabel = (movement: string): string =>
     REVERSAL: "Reversal",
   })[movement] ?? movement;
 
+const paymentMethodLabel = (method: string): string =>
+  ({ CASH: "Cash", UPI: "UPI", CARD: "Card" })[method] ?? method;
+
 export function PersonDetailPage() {
   const { personId = "" } = useParams();
   const navigate = useNavigate();
@@ -207,6 +210,7 @@ export function PersonDetailPage() {
                 <th scope="col">Date</th>
                 <th scope="col">Summary</th>
                 <th scope="col">Type</th>
+                <th scope="col">Method</th>
                 <th scope="col">Amount</th>
                 <th scope="col">Running balance</th>
               </tr>
@@ -217,6 +221,7 @@ export function PersonDetailPage() {
                   <td>{transaction.effectiveDate}</td>
                   <td>{transaction.description}</td>
                   <td>{movementLabel(transaction.movement)}</td>
+                  <td>{paymentMethodLabel(transaction.paymentMethod)}</td>
                   <td>{formatInr(transaction.amount)}</td>
                   <td
                     className={

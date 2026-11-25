@@ -36,6 +36,7 @@ const statement = {
       effectiveDate: "2026-11-24",
       description: "GIVE: Alex — Short loan",
       movement: "GIVE",
+      paymentMethod: "UPI",
       amount: "10000.00",
       netEffect: "INCREASED",
       runningNetBalance: "10000.00",

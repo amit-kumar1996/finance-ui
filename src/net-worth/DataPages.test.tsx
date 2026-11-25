@@ -30,10 +30,14 @@ const dashboard = {
   whereMoneyStands: {
     cash: "50000.00",
     investments: "0.00",
-    receivables: "0.00",
     loans: "50000.00",
     creditCards: "0.00",
-    payables: "0.00",
+  },
+  peopleTracker: {
+    receivable: "10000.00",
+    payable: "5000.00",
+    net: "5000.00",
+    peopleCount: 1,
   },
   month,
   history: [
@@ -80,6 +84,11 @@ describe("dashboard, net worth and reports", () => {
     expect(await screen.findByText("Net worth, last 6 months (₹)")).toBeTruthy();
     expect(screen.getByText("Bank, cash and UPI")).toBeTruthy();
     expect(screen.getByText("+₹82,250.00")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "People tracker summary" })).toBeTruthy();
+    expect(screen.getByText("To receive")).toBeTruthy();
+    expect(screen.getByText("To repay")).toBeTruthy();
+    expect(screen.getByText("₹10,000.00")).toBeTruthy();
+    expect(screen.getByText("₹5,000.00")).toBeTruthy();
     expect(screen.queryByRole("button")).toBeNull();
   });
 

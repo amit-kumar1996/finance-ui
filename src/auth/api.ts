@@ -296,6 +296,7 @@ export const createAccountTransfer = (
   });
 
 export type PersonMovement = "GIVE" | "RECEIVE" | "BORROW" | "REPAY";
+export type PersonPaymentMethod = "CASH" | "UPI" | "CARD";
 
 export interface PersonSummary {
   id: string;
@@ -318,7 +319,8 @@ export interface PersonStatementRow {
   id: string;
   effectiveDate: string;
   description: string;
-  movement: PersonMovement | "REVERSAL";
+  movement: PersonMovement;
+  paymentMethod: PersonPaymentMethod;
   amount: string;
   netEffect: "INCREASED" | "DECREASED";
   runningNetBalance: string;
@@ -371,10 +373,10 @@ export const archivePerson = (
 export const postPersonMovement = (
   input: {
     movement: PersonMovement;
+    paymentMethod: PersonPaymentMethod;
     personId: string;
     effectiveDate: string;
     amount: string;
-    accountId: string;
     note?: string;
   },
   csrfToken: string,
