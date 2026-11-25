@@ -9,6 +9,7 @@ import { PeoplePage } from "./people/PeoplePage.js";
 import { PersonDetailPage } from "./people/PersonDetailPage.js";
 import { ExpensesPage } from "./expenses/ExpensesPage.js";
 import { LoansPage } from "./loans/LoansPage.js";
+import { InvestmentsPage } from "./investments/InvestmentsPage.js";
 
 const primaryNavigation = [
   { label: "Dashboard", path: "/", mobileLabel: "Home" },
@@ -107,6 +108,8 @@ function Page({
         <ExpensesPage />
       ) : title === "Loans & EMI" ? (
         <LoansPage />
+      ) : title === "Investments" ? (
+        <InvestmentsPage />
       ) : (
         <section className="welcome-panel">
           <p>Welcome to your Personal Finance Manager</p>
