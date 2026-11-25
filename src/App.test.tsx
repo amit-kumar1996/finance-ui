@@ -97,8 +97,51 @@ describe("app navigation shell", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "Switch to dark theme" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open user menu" }));
+    fireEvent.click(screen.getByRole("button", { name: /Dark mode/ }));
     expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("shows the signed-in account and closes the user menu on outside click", async () => {
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open user menu" }));
+    expect(screen.getByRole("dialog", { name: "User menu" })).toBeTruthy();
+    expect(screen.getByText("Account owner")).toBeTruthy();
+    expect(screen.getByText("local-user")).toBeTruthy();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("dialog", { name: "User menu" })).toBeNull();
+  });
+
+  it("closes the user menu with Escape", async () => {
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open user menu" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "User menu" })).toBeNull();
+  });
+
+  it("logs out from the user menu", async () => {
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open user menu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    expect(
+      await screen.findByRole("button", { name: "Continue with passkey" }),
+    ).toBeTruthy();
   });
 
   it("shows passkey sign-in and one-time setup when there is no session", async () => {

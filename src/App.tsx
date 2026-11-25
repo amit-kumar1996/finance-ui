@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router";
 import { AuthProvider, useAuth } from "./auth/AuthProvider.js";
 import { AuthScreen, RecoveryPasskeyScreen } from "./auth/AuthScreen.js";
@@ -92,17 +92,7 @@ function SyncBadge() {
   );
 }
 
-function PageHeading({
-  title,
-  theme,
-  onToggleTheme,
-  onLogout,
-}: {
-  title: string;
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
-  onLogout: () => void;
-}) {
+function PageHeading({ title }: { title: string }) {
   return (
     <div className="page-heading">
       <div>
@@ -110,17 +100,6 @@ function PageHeading({
         <p>Your personal financial position</p>
       </div>
       <div className="heading-actions">
-        <button
-          className="theme-toggle"
-          type="button"
-          aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
-          onClick={onToggleTheme}
-        >
-          {theme === "light" ? "Dark mode" : "Light mode"}
-        </button>
-        <button className="theme-toggle" type="button" onClick={onLogout}>
-          Sign out
-        </button>
         <SyncBadge />
       </div>
     </div>
@@ -129,25 +108,14 @@ function PageHeading({
 
 function Page({
   title,
-  theme,
-  onToggleTheme,
-  onLogout,
   personDetail = false,
 }: {
   title: string;
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
-  onLogout: () => void;
   personDetail?: boolean;
 }) {
   return (
     <>
-      <PageHeading
-        title={title}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
-        onLogout={onLogout}
-      />
+      <PageHeading title={title} />
       {title === "Settings" ? (
         <>
           <SecuritySettings />
@@ -186,11 +154,86 @@ function Page({
   );
 }
 
+function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="8" r="3.25" />
+      <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  );
+}
+
+function UserMenu({
+  className,
+  menuRef,
+  buttonRef,
+  isOpen,
+  onToggle,
+  onClose,
+  theme,
+  onToggleTheme,
+  onLogout,
+  userId,
+}: {
+  className: string;
+  menuRef: React.RefObject<HTMLDivElement | null>;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
+  onLogout: () => void;
+  userId: string;
+}) {
+  return (
+    <div className={`user-menu ${className}`} ref={menuRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="user-menu-trigger"
+        aria-label="Open user menu"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+      >
+        <UserIcon />
+      </button>
+      {isOpen && (
+        <div className="user-menu-panel" role="dialog" aria-label="User menu">
+          <div className="user-menu-identity">
+            <strong>Account owner</strong>
+            <span>Signed in user</span>
+            <code>{userId}</code>
+          </div>
+          <button type="button" className="user-menu-action" onClick={onToggleTheme}>
+            <span>{theme === "light" ? "Dark mode" : "Light mode"}</span>
+            <span className="user-menu-value">{theme === "light" ? "Off" : "On"}</span>
+          </button>
+          <button
+            type="button"
+            className="user-menu-action user-menu-logout"
+            onClick={() => {
+              onClose();
+              onLogout();
+            }}
+          >
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AppContent() {
   const { checkingSession, session, error, setError, clearSession, clearRecoveryCodes } =
     useAuth();
   const [theme, setTheme] = useState<"light" | "dark">(getSavedTheme);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const toggleTheme = () =>
     setTheme((current) => (current === "light" ? "dark" : "light"));
@@ -204,13 +247,7 @@ function AppContent() {
     }
   };
   const page = (title: string, personDetail = false) => (
-    <Page
-      title={title}
-      theme={theme}
-      onToggleTheme={toggleTheme}
-      onLogout={() => void signOut()}
-      personDetail={personDetail}
-    />
+    <Page title={title} personDetail={personDetail} />
   );
 
   useEffect(() => {
@@ -223,6 +260,28 @@ function AppContent() {
   }, [theme]);
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (!userMenuRef.current?.contains(target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setUserMenuOpen(false);
+      userButtonRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [userMenuOpen]);
 
   useEffect(() => {
     if (!session || session.recoveryOnly) return;
@@ -335,6 +394,19 @@ function AppContent() {
           More
         </button>
       </nav>
+
+      <UserMenu
+        className="global-user-menu"
+        menuRef={userMenuRef}
+        buttonRef={userButtonRef}
+        isOpen={userMenuOpen}
+        onToggle={() => setUserMenuOpen((open) => !open)}
+        onClose={() => setUserMenuOpen(false)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onLogout={() => void signOut()}
+        userId={session.userId}
+      />
 
       {moreOpen && (
         <nav className="more-menu" aria-label="More pages">
