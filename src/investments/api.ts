@@ -1,4 +1,4 @@
-import { authRequest } from "../auth/api.js";
+import { apiRequest } from "../auth/api.js";
 
 export type InvestmentType = "NPS" | "MUTUAL_FUND" | "STOCK" | "FD" | "PPF" | "EPF";
 export interface Investment {
@@ -38,17 +38,17 @@ export const listInvestments = async (): Promise<{
   investments: Investment[];
   mutualFundXirr: string | null;
 }> =>
-  authRequest<{ investments: Investment[]; mutualFundXirr: string | null }>(
+  apiRequest<{ investments: Investment[]; mutualFundXirr: string | null }>(
     "/investments",
   );
 export const listInvestmentAccounts = async (): Promise<InvestmentAccount[]> =>
-  (await authRequest<{ accounts: InvestmentAccount[] }>("/accounts")).accounts;
+  (await apiRequest<{ accounts: InvestmentAccount[] }>("/accounts")).accounts;
 export const createInvestment = (
   body: unknown,
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ investmentId: string }>("/investments", {
+  apiRequest<{ investmentId: string }>("/investments", {
     method: "POST",
     body,
     csrfToken,
@@ -61,7 +61,7 @@ export const postInvestmentActivity = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ posted: boolean }>(`/investments/${encodeURIComponent(id)}/${action}`, {
+  apiRequest<{ posted: boolean }>(`/investments/${encodeURIComponent(id)}/${action}`, {
     method: "POST",
     body,
     csrfToken,
@@ -73,7 +73,7 @@ export const updateInvestmentPrice = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ updated: boolean }>(`/investments/${encodeURIComponent(id)}/price`, {
+  apiRequest<{ updated: boolean }>(`/investments/${encodeURIComponent(id)}/price`, {
     method: "PUT",
     body,
     csrfToken,
@@ -85,14 +85,14 @@ export const updateInvestmentValuation = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ updated: boolean }>(`/investments/${encodeURIComponent(id)}/valuation`, {
+  apiRequest<{ updated: boolean }>(`/investments/${encodeURIComponent(id)}/valuation`, {
     method: "PUT",
     body,
     csrfToken,
     idempotencyKey,
   });
 export const syncAmfiNav = (csrfToken: string) =>
-  authRequest<{
+  apiRequest<{
     updated: number;
     missing: string[];
     sourceDates: string[];

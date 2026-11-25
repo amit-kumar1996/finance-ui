@@ -1,4 +1,4 @@
-import { authRequest } from "../auth/api.js";
+import { apiRequest } from "../auth/api.js";
 
 export interface LoanScheduleLine {
   dueDate: string;
@@ -33,10 +33,10 @@ export interface LoanAccount {
 }
 
 export const listLoans = async (): Promise<Loan[]> =>
-  (await authRequest<{ loans: Loan[] }>("/loans")).loans;
+  (await apiRequest<{ loans: Loan[] }>("/loans")).loans;
 
 export const listLoanAccounts = async (): Promise<LoanAccount[]> =>
-  (await authRequest<{ accounts: LoanAccount[] }>("/accounts")).accounts;
+  (await apiRequest<{ accounts: LoanAccount[] }>("/accounts")).accounts;
 
 export const createLoan = (
   input: {
@@ -53,7 +53,7 @@ export const createLoan = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ loan: Loan }>("/loans", {
+  apiRequest<{ loan: Loan }>("/loans", {
     method: "POST",
     body: input,
     csrfToken,
@@ -74,7 +74,7 @@ export const postLoanPayment = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ posted: boolean }>(`/loans/${encodeURIComponent(loanId)}/payments`, {
+  apiRequest<{ posted: boolean }>(`/loans/${encodeURIComponent(loanId)}/payments`, {
     method: "POST",
     body: input,
     csrfToken,
@@ -92,7 +92,7 @@ export const postLoanPrepayment = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  authRequest<{ posted: boolean }>(`/loans/${encodeURIComponent(loanId)}/prepayments`, {
+  apiRequest<{ posted: boolean }>(`/loans/${encodeURIComponent(loanId)}/prepayments`, {
     method: "POST",
     body: input,
     csrfToken,
