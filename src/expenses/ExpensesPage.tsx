@@ -11,6 +11,7 @@ import {
   type ExpenseSummary,
 } from "../auth/api.js";
 import { useAuth } from "../auth/AuthProvider.js";
+import { listPendingMutations } from "../offline/database.js";
 
 const currentKolkataDate = (): string => {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -93,6 +94,7 @@ function ComparisonCard({
 export function ExpensesPage() {
   const { session, setError } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [pendingExpenses, setPendingExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
   const [defaultAccountName, setDefaultAccountName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,6 +148,39 @@ export function ExpensesPage() {
       .catch((cause: unknown) => setError(errorText(cause)));
   }, [setError]);
 
+  useEffect(() => {
+    const reloadPending = () => {
+      void listPendingMutations().then((mutations) => {
+        setPendingExpenses(
+          mutations
+            .filter((item) => item.method === "POST" && item.path === "/expenses")
+            .map((item) => {
+              const payload = item.payload as {
+                effectiveDate: string;
+                description: string;
+                amount: string;
+              };
+              return {
+                id: `offline-${item.clientId}`,
+                effectiveDate: payload.effectiveDate,
+                description: payload.description,
+                amount: payload.amount,
+                accountId: "offline",
+                accountName: item.state === "conflict" ? "Sync conflict" : "Pending sync",
+              };
+            }),
+        );
+      });
+    };
+    const onSyncState = () => {
+      reloadPending();
+      if (navigator.onLine) void refresh();
+    };
+    reloadPending();
+    window.addEventListener("pfm-sync-state", onSyncState);
+    return () => window.removeEventListener("pfm-sync-state", onSyncState);
+  }, [refresh]);
+
   const resetForm = () => {
     setEditingExpenseId(null);
     setEffectiveDate(currentKolkataDate());
@@ -178,7 +213,25 @@ export function ExpensesPage() {
           crypto.randomUUID(),
         );
       } else {
-        await createExpense(input, session.csrfToken, crypto.randomUUID());
+        const result = await createExpense(input, session.csrfToken, crypto.randomUUID());
+        if (result.queued && result.clientId) {
+          setPendingExpenses((current) => {
+            const id = `offline-${result.clientId}`;
+            return current.some((item) => item.id === id)
+              ? current
+              : [
+                  ...current,
+                  {
+                    id,
+                    ...input,
+                    accountId: "offline",
+                    accountName: "Pending sync",
+                  },
+                ];
+          });
+          resetForm();
+          return;
+        }
       }
       resetForm();
       await Promise.all([refresh(), refreshSummary()]);
@@ -188,6 +241,17 @@ export function ExpensesPage() {
       setSaving(false);
     }
   };
+
+  const visibleExpenses = [
+    ...expenses,
+    ...pendingExpenses.filter(
+      (expense) =>
+        (!search || expense.description.toLowerCase().includes(search.toLowerCase())) &&
+        (!from || expense.effectiveDate >= from) &&
+        (!to || expense.effectiveDate <= to) &&
+        (!month || expense.effectiveDate.startsWith(month)),
+    ),
+  ];
 
   const remove = async (expense: Expense) => {
     if (!session) return;
@@ -218,8 +282,8 @@ export function ExpensesPage() {
           <button
             className="secondary-button"
             type="button"
-            onClick={() => saveCsv(expenses)}
-            disabled={!expenses.length}
+            onClick={() => saveCsv(visibleExpenses)}
+            disabled={!visibleExpenses.length}
           >
             Export CSV
           </button>
@@ -378,7 +442,7 @@ export function ExpensesPage() {
           <p className="expense-loading" role="status">
             Loading expenses…
           </p>
-        ) : expenses.length === 0 ? (
+        ) : visibleExpenses.length === 0 ? (
           <div className="expense-empty">
             <h3>No expenses found</h3>
             <p>Change your filters or add an expense.</p>
@@ -395,28 +459,42 @@ export function ExpensesPage() {
                 </tr>
               </thead>
               <tbody>
-                {expenses.map((expense) => (
+                {visibleExpenses.map((expense) => (
                   <tr key={expense.id}>
                     <td>{expense.effectiveDate}</td>
-                    <th scope="row">{expense.description}</th>
+                    <th scope="row">
+                      {expense.description}
+                      {expense.id.startsWith("offline-") && (
+                        <small className="expense-pending-label">
+                          {" "}
+                          · {expense.accountName}
+                        </small>
+                      )}
+                    </th>
                     <td>{formatInr(expense.amount)}</td>
                     <td className="expense-row-actions">
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={() => beginEdit(expense)}
-                        disabled={saving}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="text-button expense-delete-button"
-                        onClick={() => void remove(expense)}
-                        disabled={saving}
-                      >
-                        Delete
-                      </button>
+                      {expense.id.startsWith("offline-") ? (
+                        <span className="expense-pending-label">Queued</span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={() => beginEdit(expense)}
+                            disabled={saving}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button expense-delete-button"
+                            onClick={() => void remove(expense)}
+                            disabled={saving}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

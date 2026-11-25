@@ -47,6 +47,9 @@ export function PersonDetailPage() {
 
   useEffect(() => {
     void refresh();
+    const onSyncComplete = () => void refresh();
+    window.addEventListener("pfm-sync-complete", onSyncComplete);
+    return () => window.removeEventListener("pfm-sync-complete", onSyncComplete);
   }, [refresh]);
 
   const saveChanges = async (event: React.FormEvent<HTMLFormElement>) => {

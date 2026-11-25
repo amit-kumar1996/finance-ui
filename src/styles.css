@@ -150,6 +150,76 @@ a {
   background: currentColor;
 }
 
+.sync-badge.sync-pending {
+  color: var(--warning-text, #8a4b08);
+  border-color: color-mix(in srgb, currentColor 24%, transparent);
+}
+
+.sync-badge.sync-pending .sync-dot {
+  background: currentColor;
+}
+
+.expense-pending-label {
+  color: var(--muted-text);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.sync-queue-panel {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background: var(--panel-background);
+}
+
+.sync-queue-panel h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.sync-queue-panel > div > p,
+.sync-queue-panel .report-empty {
+  color: var(--muted-text);
+}
+
+.sync-queue-panel ul {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sync-queue-panel li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+}
+
+.sync-queue-panel li > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.sync-queue-panel li span,
+.sync-queue-panel li small {
+  color: var(--muted-text);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .sync-queue-panel li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .welcome-panel {
   display: grid;
   min-height: 180px;

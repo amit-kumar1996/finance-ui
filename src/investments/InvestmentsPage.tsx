@@ -110,6 +110,9 @@ export function InvestmentsPage() {
   }, [setError]);
   useEffect(() => {
     void refresh();
+    const onSyncComplete = () => void refresh();
+    window.addEventListener("pfm-sync-complete", onSyncComplete);
+    return () => window.removeEventListener("pfm-sync-complete", onSyncComplete);
   }, [refresh]);
   useEffect(() => {
     if (accounts[0] && !accountId) setAccountId(accounts[0].id);

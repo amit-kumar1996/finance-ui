@@ -89,6 +89,9 @@ export function LoansPage() {
 
   useEffect(() => {
     void refresh();
+    const onSyncComplete = () => void refresh();
+    window.addEventListener("pfm-sync-complete", onSyncComplete);
+    return () => window.removeEventListener("pfm-sync-complete", onSyncComplete);
   }, [refresh]);
   useEffect(() => {
     if (accounts[0] && !paymentAccountId) setPaymentAccountId(accounts[0].id);

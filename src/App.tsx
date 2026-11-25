@@ -13,6 +13,13 @@ import { InvestmentsPage } from "./investments/InvestmentsPage.js";
 import { DashboardPage } from "./net-worth/DashboardPage.js";
 import { NetWorthPage } from "./net-worth/NetWorthPage.js";
 import { ReportsPage } from "./net-worth/ReportsPage.js";
+import {
+  getSyncSnapshot,
+  refreshPendingCount,
+  subscribeSyncState,
+} from "./offline/database.js";
+import { registerOfflineWorker, syncNow } from "./offline/sync.js";
+import { SyncQueuePanel } from "./offline/SyncQueuePanel.js";
 
 const primaryNavigation = [
   { label: "Dashboard", path: "/", mobileLabel: "Home" },
@@ -37,6 +44,51 @@ function getSavedTheme(): "light" | "dark" {
   } catch {
     return "light";
   }
+}
+
+function SyncBadge() {
+  const [state, setState] = useState(getSyncSnapshot);
+  const [online, setOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  useEffect(() => {
+    const unsubscribe = subscribeSyncState(() => setState(getSyncSnapshot()));
+    const updateNetwork = () => setOnline(navigator.onLine);
+    void refreshPendingCount();
+    window.addEventListener("online", updateNetwork);
+    window.addEventListener("offline", updateNetwork);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("online", updateNetwork);
+      window.removeEventListener("offline", updateNetwork);
+    };
+  }, []);
+  const label = state.conflicts
+    ? `${state.pending} pending, ${state.conflicts} conflict${state.conflicts === 1 ? "" : "s"}`
+    : state.syncing
+      ? `Syncing, ${state.pending} pending`
+      : !online
+        ? `Offline, ${state.pending} pending`
+        : state.pending
+          ? `${state.pending} pending sync`
+          : "Synced, zero pending";
+  const display = state.syncing
+    ? `Syncing · ${state.pending} pending`
+    : !online
+      ? `Offline · ${state.pending} pending`
+      : state.conflicts
+        ? `${state.pending} pending · ${state.conflicts} conflict${state.conflicts === 1 ? "" : "s"}`
+        : state.pending
+          ? `${state.pending} pending sync`
+          : "Synced · 0 pending";
+  return (
+    <div
+      className={`sync-badge${state.pending ? " sync-pending" : ""}`}
+      aria-label={label}
+    >
+      <span className="sync-dot" /> {display}
+    </div>
+  );
 }
 
 function PageHeading({
@@ -68,9 +120,7 @@ function PageHeading({
         <button className="theme-toggle" type="button" onClick={onLogout}>
           Sign out
         </button>
-        <div className="sync-badge" aria-label="Synced, zero pending">
-          <span className="sync-dot" /> Synced · 0 pending
-        </div>
+        <SyncBadge />
       </div>
     </div>
   );
@@ -98,7 +148,10 @@ function Page({
         onLogout={onLogout}
       />
       {title === "Settings" ? (
-        <SecuritySettings />
+        <>
+          <SecuritySettings />
+          <SyncQueuePanel />
+        </>
       ) : title === "Accounts" ? (
         <AccountsPage />
       ) : title === "People" ? (
@@ -169,6 +222,25 @@ function AppContent() {
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
 
+  useEffect(() => {
+    if (!session || session.recoveryOnly) return;
+    const runSync = () => {
+      if (navigator.onLine) void syncNow(session.csrfToken).catch(() => undefined);
+    };
+    const onWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === "pfm-sync-complete") runSync();
+    };
+    void registerOfflineWorker();
+    void refreshPendingCount();
+    runSync();
+    window.addEventListener("online", runSync);
+    navigator.serviceWorker?.addEventListener("message", onWorkerMessage);
+    return () => {
+      window.removeEventListener("online", runSync);
+      navigator.serviceWorker?.removeEventListener("message", onWorkerMessage);
+    };
+  }, [session?.csrfToken, session?.recoveryOnly]);
+
   if (checkingSession) {
     return (
       <main className="auth-screen">
@@ -224,9 +296,7 @@ function AppContent() {
         )}
         <header className="mobile-header">
           <span className="mobile-brand">Personal Finance Manager</span>
-          <div className="sync-badge" aria-label="Synced, zero pending">
-            <span className="sync-dot" /> Synced · 0 pending
-          </div>
+          <SyncBadge />
         </header>
         <Routes>
           <Route path="/" element={page("Dashboard")} />

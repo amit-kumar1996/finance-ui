@@ -4,8 +4,19 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
 } from "@simplewebauthn/browser";
+import { queueMutation } from "../offline/database.js";
 
 const apiBase = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api/v1";
+
+const isOfflineQueueable = (method: string, path: string) =>
+  (method === "POST" || method === "PUT") &&
+  (/^\/(?:expenses|transfers|ledger\/expenses|ledger\/credit-card-purchases|ledger\/credit-card-payments|people\/transactions)$/.test(
+    path,
+  ) ||
+    /^\/loans\/[A-Za-z0-9_-]{1,30}\/(?:payments|prepayments)$/.test(path) ||
+    /^\/investments\/[A-Za-z0-9_-]{1,30}\/(?:buys|sells|contributions|withdrawals|price|valuation)$/.test(
+      path,
+    ));
 
 export interface AuthSession {
   userId: string;
@@ -45,12 +56,38 @@ export const apiRequest = async <T>(
   if (options.csrfToken) headers.set("X-CSRF-Token", options.csrfToken);
   if (options.setupToken) headers.set("X-Setup-Token", options.setupToken);
   if (options.idempotencyKey) headers.set("Idempotency-Key", options.idempotencyKey);
-  const response = await fetch(`${apiBase}${path}`, {
-    method: options.method ?? "GET",
-    credentials: "include",
-    headers,
-    ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase}${path}`, {
+      method: options.method ?? "GET",
+      credentials: "include",
+      headers,
+      ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
+    });
+  } catch (error) {
+    if (
+      isOfflineQueueable(options.method ?? "GET", path) &&
+      options.idempotencyKey &&
+      options.csrfToken &&
+      typeof options.body === "object" &&
+      options.body !== null
+    ) {
+      const body = options.body as Record<string, unknown>;
+      await queueMutation(
+        options.idempotencyKey,
+        options.method as "POST" | "PUT",
+        path,
+        body,
+        options.csrfToken,
+      );
+      return {
+        transaction: { id: options.idempotencyKey },
+        queued: true,
+        clientId: options.idempotencyKey,
+      } as T;
+    }
+    throw error;
+  }
   const payload = (await response.json()) as
     ApiEnvelope<T> | { error?: { message?: string } };
   if (!response.ok) {
@@ -354,12 +391,15 @@ export const createExpense = (
   csrfToken: string,
   idempotencyKey: string,
 ) =>
-  apiRequest<{ transaction: { id: string } }>("/expenses", {
-    method: "POST",
-    body: input,
-    csrfToken,
-    idempotencyKey,
-  });
+  apiRequest<{ transaction: { id: string }; queued?: boolean; clientId?: string }>(
+    "/expenses",
+    {
+      method: "POST",
+      body: input,
+      csrfToken,
+      idempotencyKey,
+    },
+  );
 
 export const editExpense = (
   expenseId: string,
