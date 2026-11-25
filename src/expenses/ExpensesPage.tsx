@@ -302,7 +302,7 @@ export function ExpensesPage() {
 
       {!defaultAccountName && (
         <p className="expense-default-notice" role="status">
-          Choose a default spending account on the{" "}
+          Add a Bank, Cash, or UPI account on the{" "}
           <Link to="/accounts">Accounts page</Link> before adding expenses.
         </p>
       )}
