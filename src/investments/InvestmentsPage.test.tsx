@@ -45,7 +45,9 @@ describe("Investments page", () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ data: { investments: [investment] } }),
+          json: async () => ({
+            data: { investments: [investment], mutualFundXirr: "10.00" },
+          }),
         } as Response;
       if (url.endsWith("/accounts"))
         return {

@@ -34,8 +34,13 @@ export interface InvestmentAccount {
   accountType: "BANK" | "CASH" | "UPI" | "CREDIT_CARD";
 }
 
-export const listInvestments = async (): Promise<Investment[]> =>
-  (await authRequest<{ investments: Investment[] }>("/investments")).investments;
+export const listInvestments = async (): Promise<{
+  investments: Investment[];
+  mutualFundXirr: string | null;
+}> =>
+  authRequest<{ investments: Investment[]; mutualFundXirr: string | null }>(
+    "/investments",
+  );
 export const listInvestmentAccounts = async (): Promise<InvestmentAccount[]> =>
   (await authRequest<{ accounts: InvestmentAccount[] }>("/accounts")).accounts;
 export const createInvestment = (

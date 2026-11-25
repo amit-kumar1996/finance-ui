@@ -65,6 +65,7 @@ const labels: Record<InvestmentType, string> = {
 export function InvestmentsPage() {
   const { session, setError } = useAuth();
   const [rows, setRows] = useState<Investment[]>([]);
+  const [mutualFundXirr, setMutualFundXirr] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<InvestmentAccount[]>([]);
   const [tab, setTab] = useState<(typeof types)[number]["key"]>("ALL");
   const [loading, setLoading] = useState(true);
@@ -90,11 +91,13 @@ export function InvestmentsPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [investments, accountResult] = await Promise.all([
+      const [portfolio, accountResult] = await Promise.all([
         listInvestments(),
         listInvestmentAccounts(),
       ]);
+      const investments = portfolio.investments;
       setRows(investments);
+      setMutualFundXirr(portfolio.mutualFundXirr);
       setAccounts(
         accountResult.filter((account) => account.accountType !== "CREDIT_CARD"),
       );
@@ -122,9 +125,8 @@ export function InvestmentsPage() {
   const fixed = rows.filter((row) => ["FD", "PPF", "EPF"].includes(row.investmentType));
   const totalValue = sumMoney(rows.map((row) => row.currentValue));
   const totalInvested = sumMoney(rows.map((row) => row.invested));
-  const profit = sumMoney([totalValue, `-${totalInvested}`]);
-  const mutualXirr =
-    rows.find((row) => row.investmentType === "MUTUAL_FUND" && row.xirr)?.xirr ?? null;
+  const totalRealized = sumMoney(rows.map((row) => row.realizedPl));
+  const profit = sumMoney([totalValue, `-${totalInvested}`, totalRealized]);
   const totalCents = rows.reduce((sum, row) => {
     const [whole = "0", fraction = ""] = row.currentValue.split(".");
     return (
@@ -264,7 +266,7 @@ export function InvestmentsPage() {
             <th>{marketTable ? "Units / Price" : "Rate / Maturity"}</th>
             <th>Invested</th>
             <th>Current value</th>
-            <th>Gain / loss</th>
+            <th>Total gain / loss</th>
             <th>Price data</th>
             <th></th>
           </tr>
@@ -300,12 +302,12 @@ export function InvestmentsPage() {
               <td>{money(row.currentValue)}</td>
               <td
                 className={
-                  row.unrealizedPl.startsWith("-")
+                  sumMoney([row.realizedPl, row.unrealizedPl]).startsWith("-")
                     ? "negative-balance"
                     : "positive-balance"
                 }
               >
-                {money(row.unrealizedPl)}
+                {money(sumMoney([row.realizedPl, row.unrealizedPl]))}
               </td>
               <td>
                 {row.priceSource ? (
@@ -492,7 +494,7 @@ export function InvestmentsPage() {
         </article>
         <article>
           <span>Mutual fund XIRR</span>
-          <strong>{mutualXirr ? `${mutualXirr}%` : "—"}</strong>
+          <strong>{mutualFundXirr ? `${mutualFundXirr}%` : "—"}</strong>
         </article>
       </div>
       {loading ? (
